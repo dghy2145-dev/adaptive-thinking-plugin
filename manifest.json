@@ -1,0 +1,42 @@
+{
+  "manifestVersion": 1,
+  "id": "adaptive-thinking-plugin",
+  "name": "任务自适应思考深度",
+  "version": "0.1.2",
+  "description": "按当前任务与近期对话选择当前会话的思考档位，保留手动优先。",
+  "minAppVersion": "0.449.0",
+  "trust": "full-access",
+  "activationEvents": ["onStartup"],
+  "capabilities": ["session", "model.sample"],
+  "contributes": {
+    "configuration": {
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false,
+          "scope": "per-agent",
+          "title": "为此 Agent 启用自动思考档位",
+          "description": "每条新用户消息会由当前 Agent 的 utility 模型分类，可能产生额外费用，并可能发送有限的近期对话到另一供应商。"
+        },
+        "sessionAuto": {
+          "type": "boolean",
+          "default": true,
+          "scope": "per-session",
+          "title": "本会话自动模式",
+          "description": "手动选择档位后自动暂停；重新开启后从下一条用户消息恢复。"
+        }
+      }
+    }
+  },
+  "dev": {
+    "scenarios": [
+      {
+        "id": "smoke-status",
+        "steps": [
+          { "invokeTool": { "name": "adaptive_thinking_status", "input": {} } },
+          { "expectToolText": "自适应思考" }
+        ]
+      }
+    ]
+  }
+}
