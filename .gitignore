@@ -1,0 +1,3 @@
+# 本地构建与临时产物
+*.zip
+node_modules/

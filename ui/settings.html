@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>自适应思考</title>
+  <link id="hana-theme" rel="stylesheet">
+  <style>
+    :root { color-scheme: light; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif; font-size: 13px; --page-fallback: #f3f5f7; --card-fallback: #f8f9fb; --line-fallback: #e4e8ed; --text-fallback: #303740; --muted-fallback: #747e89; }
+    :root[data-appearance="dark"] { color-scheme: dark; --page-fallback: #202329; --card-fallback: #2a2e35; --line-fallback: #414750; --text-fallback: #e6e9ed; --muted-fallback: #a3acb6; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; }
+    body { min-height: 100vh; background: var(--bg-main, var(--page-fallback)); color: var(--text, var(--text-fallback)); }
+    main { width: 100%; min-width: 0; padding: 24px 24px 32px; }
+    .heading { margin: 0 0 5px; color: var(--text, var(--text-fallback)); font-size: 15px; font-weight: 600; line-height: 1.5; }
+    .description { margin: 0 0 18px; color: var(--text-muted, var(--muted-fallback)); font-size: 12px; line-height: 1.6; }
+    .list { overflow: hidden; border: 1px solid var(--border-muted, var(--line-fallback)); border-radius: 8px; background: var(--bg-card, var(--card-fallback)); }
+    .row { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 54px; padding: 12px 18px; }
+    .row + .row { border-top: 1px solid var(--border-muted, var(--line-fallback)); }
+    .identity { min-width: 0; }
+    .name { display: block; color: var(--text, var(--text-fallback)); font-size: 13px; font-weight: 500; line-height: 1.5; overflow-wrap: anywhere; }
+    .detail { display: block; margin-top: 3px; color: var(--text-muted, var(--muted-fallback)); font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; }
+    .switch { position: relative; display: inline-flex; flex: 0 0 36px; width: 36px; height: 20px; cursor: pointer; }
+    .switch input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: inherit; }
+    .track { width: 36px; height: 20px; border-radius: 5px; background: var(--border-muted, #c4cbd3); transition: background .15s; pointer-events: none; }
+    .track::after { content: ''; display: block; width: 14px; height: 14px; margin: 3px; border-radius: 3px; background: #fff; transition: transform .15s; }
+    .switch input:checked + .track { background: var(--accent, #6287a3); }
+    .switch input:checked + .track::after { transform: translateX(16px); }
+    .switch input:focus-visible + .track { outline: 2px solid var(--accent, #6287a3); outline-offset: 3px; }
+    .switch input:disabled + .track { opacity: .45; }
+    .switch:has(input:disabled) { cursor: wait; }
+    #status { margin: 12px 2px 0; color: var(--text-muted, var(--muted-fallback)); font-size: 12px; line-height: 1.5; }
+    #status:empty { display: none; }
+    #status.error { color: var(--color-err, #c44); }
+    .retry { margin: 12px; padding: 6px 12px; border: 1px solid var(--border-muted, var(--line-fallback)); border-radius: 5px; background: var(--bg-card, var(--card-fallback)); color: var(--text, var(--text-fallback)); font: inherit; cursor: pointer; }
+    .session-controls { margin-top: 28px; }
+    .session-controls summary { cursor: pointer; color: var(--text, var(--text-fallback)); font-size: 13px; font-weight: 600; list-style-position: inside; }
+    .session-controls summary:focus-visible, .session-search:focus-visible { outline: 2px solid var(--accent, #6287a3); outline-offset: 3px; }
+    .session-body { margin-top: 13px; padding: 16px 18px; border: 1px solid var(--border-muted, var(--line-fallback)); border-radius: 8px; background: var(--bg-card, var(--card-fallback)); }
+    .session-label { display: block; color: var(--text, var(--text-fallback)); font-size: 12px; }
+    .session-picker { position: relative; margin-top: 8px; }
+    .session-search { display: block; width: 100%; min-width: 0; padding: 8px 10px; border: 1px solid var(--border-muted, var(--line-fallback)); border-radius: 5px; background: var(--bg-main, var(--page-fallback)); color: var(--text, var(--text-fallback)); font: inherit; }
+    .session-search::placeholder { color: var(--text-muted, var(--muted-fallback)); }
+    .session-options { position: absolute; top: calc(100% + 5px); left: 0; right: 0; z-index: 2; max-height: 216px; overflow-y: auto; overscroll-behavior: contain; border: 1px solid var(--border-muted, var(--line-fallback)); border-radius: 6px; background: var(--bg-card, var(--card-fallback)); box-shadow: 0 8px 22px rgba(0,0,0,.12); }
+    .session-options[hidden] { display: none; }
+    .session-option { display: block; width: 100%; padding: 9px 11px; border: 0; border-bottom: 1px solid var(--border-muted, var(--line-fallback)); background: transparent; color: var(--text, var(--text-fallback)); font: inherit; text-align: left; cursor: pointer; }
+    .session-option:last-child { border-bottom: 0; }
+    .session-option:hover, .session-option.active { background: var(--bg-main, var(--page-fallback)); }
+    .session-option-agent, .session-option-title { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .session-option-agent { color: var(--text-muted, var(--muted-fallback)); font-size: 11px; }
+    .session-option-title { margin-top: 2px; font-size: 12px; }
+    .session-empty { padding: 12px; color: var(--text-muted, var(--muted-fallback)); font-size: 12px; }
+    .session-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border-muted, var(--line-fallback)); }
+    .session-row[hidden] { display: none; }
+    .session-note { margin: 10px 0 0; color: var(--text-muted, var(--muted-fallback)); font-size: 11px; line-height: 1.5; }
+    .session-note:empty { display: none; }
+    .session-note.error { color: var(--color-err, #c44); }
+    @media (max-width: 540px) { main { padding: 18px 16px 24px; } }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="heading">启用范围</div>
+    <p class="description">为选定的 Agent 自动调整思考档位；每条新消息会额外调用一次 utility 模型。</p>
+    <div id="list" class="list" aria-label="Agent 自动思考设置"></div>
+    <p id="status" role="status">正在读取 Agent…</p>
+    <details class="session-controls">
+      <summary>会话控制</summary>
+      <div class="session-body">
+        <label class="session-label" for="session-search">选择最近的活跃会话</label>
+        <div id="session-picker" class="session-picker">
+          <input id="session-search" class="session-search" type="text" role="combobox" aria-autocomplete="list" aria-controls="session-options" aria-expanded="false" placeholder="正在读取会话…" autocomplete="off" disabled>
+          <div id="session-options" class="session-options" role="listbox" hidden></div>
+        </div>
+        <div id="session-row" class="session-row" hidden>
+          <span class="name">本会话自动选档</span>
+          <label class="switch">
+            <input id="session-auto" type="checkbox" aria-label="本会话自动选档" disabled>
+            <span class="track" aria-hidden="true"></span>
+          </label>
+        </div>
+        <p id="session-note" class="session-note" role="status"></p>
+      </div>
+    </details>
+  </main>
+  <script type="module">
+    import { hana } from './assets/hana-ui.js';
+
+    const list = document.getElementById('list');
+    const status = document.getElementById('status');
+    const sessionPicker = document.getElementById('session-picker');
+    const sessionSearch = document.getElementById('session-search');
+    const sessionOptions = document.getElementById('session-options');
+    const sessionRow = document.getElementById('session-row');
+    const sessionAuto = document.getElementById('session-auto');
+    const sessionNote = document.getElementById('session-note');
+    const pending = new Set();
+    let agents = [];
+    let selectedSession = null;
+    let selectedId = '';
+    let availableSessions = [];
+    let visibleSessions = [];
+    let activeIndex = -1;
+    let selectionRevision = 0;
+    let ignoreNextFocus = false;
+
+    function setAppearance(snapshot) {
+      document.documentElement.dataset.appearance = snapshot?.appearance === 'dark' ? 'dark' : 'light';
+      if (snapshot?.cssUrl) document.getElementById('hana-theme').href = snapshot.cssUrl;
+    }
+    setAppearance(hana.theme.getSnapshot());
+    hana.theme.subscribe(setAppearance);
+
+    function report(message, error = false) {
+      status.textContent = message;
+      status.classList.toggle('error', error);
+    }
+
+    async function request(path, init) {
+      const response = await hana.api.fetch(path, init);
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || `请求失败 (${response.status})`);
+      return data;
+    }
+
+    const reasons = {
+      trivial: '简单请求', straightforward: '常规任务', multistep: '多步骤任务',
+      debugging: '问题排查', cross_file: '跨文件核对', high_stakes: '重要决策',
+      manual_preference: '手动要求', task_complexity: '任务复杂度'
+    };
+    const levels = { off: '关闭', low: '低', medium: '中', high: '高', max: '最高' };
+
+    function decisionText(decision) {
+      if (!decision || typeof decision !== 'object') return '暂无选档记录';
+      const when = Date.parse(decision.at);
+      const time = Number.isFinite(when) ? ` · ${new Intl.DateTimeFormat('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(when)}` : '';
+      if (decision.status === 'fallback') return `最近：分类失败，保持原档位${time}`;
+      if (decision.status === 'manual_won') return `最近：手动设定优先${time}`;
+      if (decision.status === 'manual_paused') return `最近：手动设定，自动选档已暂停${time}`;
+      if (decision.status === 'level_mismatch') return `最近：档位未按请求生效${time}`;
+      if (decision.status !== 'applied') return '暂无选档记录';
+      const level = levels[decision.level] ?? '未知档位';
+      const reason = reasons[decision.reason] ?? '任务复杂度';
+      return `最近：${level} · ${reason}${time}`;
+    }
+
+    function render() {
+      list.replaceChildren();
+      for (const agent of agents) {
+        const row = document.createElement('div');
+        row.className = 'row';
+        const identity = document.createElement('div');
+        identity.className = 'identity';
+        const name = document.createElement('span');
+        name.className = 'name';
+        name.textContent = agent.name;
+        identity.title = agent.id;
+        const detail = document.createElement('span');
+        detail.className = 'detail';
+        detail.textContent = decisionText(agent.lastDecision);
+        identity.append(name, detail);
+        const label = document.createElement('label');
+        label.className = 'switch';
+        const input = document.createElement('input');
+        input.type = 'checkbox';
+        input.checked = agent.enabled;
+        input.disabled = pending.has(agent.id);
+        input.setAttribute('aria-label', `为 ${agent.name} 启用自动思考`);
+        input.addEventListener('change', () => save(agent, input.checked));
+        const track = document.createElement('span');
+        track.className = 'track';
+        track.setAttribute('aria-hidden', 'true');
+        label.append(input, track);
+        row.append(identity, label);
+        list.append(row);
+      }
+    }
+
+    async function save(agent, enabled) {
+      if (pending.has(agent.id)) return;
+      const previous = agent.enabled;
+      agent.enabled = enabled;
+      pending.add(agent.id);
+      render();
+      report('正在保存…');
+      try {
+        await request(`/settings/agents/${encodeURIComponent(agent.id)}`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ enabled })
+        });
+        report(`${agent.name}：${enabled ? '已启用' : '已停用'}，从下一条新消息起生效。`);
+      } catch (error) {
+        agent.enabled = previous;
+        report(error.message || '保存失败。', true);
+      } finally {
+        pending.delete(agent.id);
+        render();
+      }
+    }
+
+    async function load() {
+      report('正在读取 Agent…');
+      try {
+        const data = await request('/settings/agents');
+        if (!Array.isArray(data.agents)) throw new Error('Agent 列表无效。');
+        agents = data.agents;
+        render();
+        report(agents.length ? '' : '没有可配置的 Agent。');
+      } catch (error) {
+        list.replaceChildren();
+        report(error.message || '读取失败。', true);
+        const retry = document.createElement('button');
+        retry.type = 'button';
+        retry.className = 'retry';
+        retry.textContent = '重试';
+        retry.addEventListener('click', load);
+        list.append(retry);
+      }
+    }
+
+    function sessionLabel(session) {
+      return `${session.agentName || session.agentId || 'Agent'} · ${session.title || '未命名会话'}`;
+    }
+
+    function closeOptions() {
+      sessionOptions.hidden = true;
+      sessionSearch.setAttribute('aria-expanded', 'false');
+      sessionSearch.removeAttribute('aria-activedescendant');
+      activeIndex = -1;
+    }
+
+    function highlightOption(index) {
+      const options = [...sessionOptions.querySelectorAll('.session-option')];
+      activeIndex = index;
+      options.forEach((option, position) => option.classList.toggle('active', position === index));
+      if (index >= 0 && options[index]) {
+        sessionSearch.setAttribute('aria-activedescendant', options[index].id);
+        options[index].scrollIntoView({ block: 'nearest' });
+      } else sessionSearch.removeAttribute('aria-activedescendant');
+    }
+
+    function showOptions(query = '') {
+      visibleSessions = availableSessions.filter((session) => sessionLabel(session).toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()));
+      sessionOptions.replaceChildren();
+      for (const [index, session] of visibleSessions.entries()) {
+        const option = document.createElement('button');
+        option.type = 'button';
+        option.className = 'session-option';
+        option.id = `session-option-${index}`;
+        option.setAttribute('role', 'option');
+        option.setAttribute('aria-selected', String(session.sessionId === selectedId));
+        const agent = document.createElement('span');
+        agent.className = 'session-option-agent';
+        agent.textContent = session.agentName || session.agentId || 'Agent';
+        const title = document.createElement('span');
+        title.className = 'session-option-title';
+        title.textContent = session.title || '未命名会话';
+        option.append(agent, title);
+        option.addEventListener('click', () => selectSession(session));
+        sessionOptions.append(option);
+      }
+      if (!visibleSessions.length) {
+        const empty = document.createElement('div');
+        empty.className = 'session-empty';
+        empty.textContent = '没有匹配的会话';
+        sessionOptions.append(empty);
+      }
+      sessionOptions.hidden = false;
+      sessionSearch.setAttribute('aria-expanded', 'true');
+      highlightOption(-1);
+    }
+
+    async function selectSession(item) {
+      const revision = ++selectionRevision;
+      selectedId = item.sessionId;
+      selectedSession = null;
+      sessionSearch.value = sessionLabel(item);
+      closeOptions();
+      sessionRow.hidden = true;
+      sessionAuto.disabled = true;
+      sessionNote.classList.remove('error');
+      sessionNote.textContent = '正在读取会话状态…';
+      try {
+        const session = await request(`/settings/sessions/${encodeURIComponent(selectedId)}`);
+        if (revision !== selectionRevision) return;
+        selectedSession = session;
+        sessionAuto.checked = session.auto;
+        sessionAuto.disabled = false;
+        sessionRow.hidden = false;
+        sessionNote.textContent = session.agentEnabled ? '' : '此 Agent 已停用，须先启用 Agent 才会自动选档。';
+      } catch (error) {
+        if (revision !== selectionRevision) return;
+        sessionNote.textContent = error.message || '无法读取会话状态。';
+        sessionNote.classList.add('error');
+      }
+    }
+
+    async function loadSessions() {
+      try {
+        const data = await request('/settings/sessions');
+        if (!Array.isArray(data.sessions)) throw new Error('会话列表无效。');
+        availableSessions = data.sessions;
+        sessionSearch.disabled = !availableSessions.length;
+        sessionSearch.placeholder = availableSessions.length ? '搜索或选择会话…' : '暂无活跃会话';
+        if (!availableSessions.length) sessionNote.textContent = '暂无活跃会话。';
+      } catch (error) {
+        sessionSearch.placeholder = '读取会话失败';
+        sessionNote.textContent = error.message || '会话列表不可用。';
+        sessionNote.classList.add('error');
+      }
+    }
+
+    sessionSearch.addEventListener('focus', () => {
+      if (ignoreNextFocus) { ignoreNextFocus = false; return; }
+      if (sessionSearch.disabled) return;
+      sessionSearch.select();
+      showOptions();
+    });
+    sessionSearch.addEventListener('input', () => {
+      ++selectionRevision;
+      selectedId = '';
+      selectedSession = null;
+      sessionRow.hidden = true;
+      sessionAuto.disabled = true;
+      sessionNote.textContent = '';
+      sessionNote.classList.remove('error');
+      showOptions(sessionSearch.value);
+    });
+    sessionSearch.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        closeOptions();
+        const selected = availableSessions.find((session) => session.sessionId === selectedId);
+        sessionSearch.value = selected ? sessionLabel(selected) : '';
+      } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        event.preventDefault();
+        if (sessionOptions.hidden) showOptions();
+        if (visibleSessions.length) {
+          const step = event.key === 'ArrowDown' ? 1 : -1;
+          highlightOption(activeIndex < 0 ? (step > 0 ? 0 : visibleSessions.length - 1) : (activeIndex + step + visibleSessions.length) % visibleSessions.length);
+        }
+      } else if (event.key === 'Enter' && !sessionOptions.hidden && activeIndex >= 0) {
+        event.preventDefault();
+        selectSession(visibleSessions[activeIndex]);
+      } else if (event.key === 'Tab') closeOptions();
+    });
+    sessionOptions.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        closeOptions();
+        ignoreNextFocus = true;
+        sessionSearch.focus();
+      }
+    });
+    document.addEventListener('pointerdown', (event) => {
+      if (sessionPicker.contains(event.target)) return;
+      closeOptions();
+      const selected = availableSessions.find((session) => session.sessionId === selectedId);
+      sessionSearch.value = selected ? sessionLabel(selected) : '';
+    });
+
+    sessionAuto.addEventListener('change', async () => {
+      if (!selectedSession) return;
+      const id = selectedSession.sessionId;
+      const revision = selectionRevision;
+      const previous = selectedSession.auto;
+      const auto = sessionAuto.checked;
+      sessionAuto.disabled = true;
+      sessionSearch.disabled = true;
+      sessionNote.classList.remove('error');
+      sessionNote.textContent = '正在保存…';
+      try {
+        await request(`/settings/sessions/${encodeURIComponent(id)}`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ auto })
+        });
+        if (revision !== selectionRevision) return;
+        selectedSession.auto = auto;
+        sessionNote.textContent = auto ? '已恢复；从下一条新消息起自动选档。' : '已暂停；当前档位保持不变。';
+      } catch (error) {
+        if (revision !== selectionRevision) return;
+        sessionAuto.checked = previous;
+        sessionNote.textContent = error.message || '保存失败。';
+        sessionNote.classList.add('error');
+      } finally {
+        sessionAuto.disabled = false;
+        sessionSearch.disabled = false;
+      }
+    });
+
+    await hana.ready();
+    await Promise.all([load(), loadSessions()]);
+  </script>
+</body>
+</html>
